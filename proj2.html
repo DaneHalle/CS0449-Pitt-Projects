@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Project 2: Memory Allocator</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/projects/proj2.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Project 2: Memory Allocator
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Wednesday 2/20 (or late on Thursday)
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<p>(project concept thanks to Dr. Misurda.)</p>
+
+<p>In this project, you will be implementing a memory allocator. You’ll be making your own versions of the <strong>malloc</strong> and <strong>free</strong> functions! Yay! Fun!</p>
+
+<hr />
+
+<h2 id="materials">Materials</h2>
+
+<p>You are given the following source files to begin with. Right click and download these files. <strong>Read the comments inside them thoroughly before getting started.</strong></p>
+
+<ul>
+  <li><a href="/teaching/classes/cs0449/projects/mymalloc.h">mymalloc.h</a></li>
+  <li><a href="/teaching/classes/cs0449/projects/mymalloc.c">mymalloc.c</a></li>
+  <li><a href="/teaching/classes/cs0449/projects/mydriver.c">mydriver.c</a></li>
+  <li><a href="/teaching/classes/cs0449/projects/Makefile">Makefile</a>
+    <ul>
+      <li><strong>SAFARI USERS:</strong> stop using Safari. But really, it will silently rename this file <code class="highlighter-rouge">Makefile.dms</code> and I have no idea why and you need to rename it to just <code class="highlighter-rouge">Makefile</code>.</li>
+    </ul>
+  </li>
+  <li><a href="/teaching/classes/cs0449/projects/bigdriver.c">bigdriver.c</a></li>
+</ul>
+
+<p><strong><code class="highlighter-rouge">mymalloc.c</code> is where you’ll be writing all your code for this project.</strong></p>
+
+<p>The <code class="highlighter-rouge">mydriver.c</code> file contains a <code class="highlighter-rouge">main</code> function for you to expand upon. By default it just allocates and frees a single block of memory. As you work on your allocator, you can add more testing code to this driver program to make sure it works.</p>
+
+<p><code class="highlighter-rouge">Makefile</code> is a makefile to make your driver, and eventually, other test file(s) that I give you.</p>
+
+<p>The <code class="highlighter-rouge">bigdriver.c</code> file is a driver I made to test your allocator more thoroughly. <strong>READ THE COMMENTS INSIDE IT THOROUGHLY TO HELP DEBUG ANY ISSUES THAT COME UP.</strong></p>
+
+<p class="note-important">Although <code class="highlighter-rouge">bigdriver.c</code> does a lot of tests, it might not catch all bugs. Look at it closely and add tests if you think it’s not thorough enough. You can change it and submit it along with your <code class="highlighter-rouge">mydriver.c</code>.</p>
+
+<hr />
+
+<h2 id="building-and-running">Building and running</h2>
+
+<p><strong>To build everything,</strong> use the following command line:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make mydriver
+</code></pre></div></div>
+
+<p class="important"><strong>Ignoring warnings in this project would be a very, very bad idea.</strong> The <code class="highlighter-rouge">Makefile</code> uses <code class="highlighter-rouge">-Wall -Werror</code>. Do not remove these. <em>Fix all the warnings. SERIOUSLY.</em></p>
+
+<p>Then, you should be able to:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./mydriver
+</code></pre></div></div>
+
+<p>You can do the same with <code class="highlighter-rouge">bigdriver</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make bigdriver
+./bigdriver
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="your-task">Your Task</h2>
+
+<p>You will write <code class="highlighter-rouge">my_malloc</code> and <code class="highlighter-rouge">my_free</code> which implement a simple memory allocator using a linked list and a <strong>first-fit</strong> allocation scheme. The performance won’t be great, but hey, it’s a class project, not a AAA game engine.</p>
+
+<p>Your <code class="highlighter-rouge">my_malloc</code> function will:</p>
+
+<ul>
+  <li>Round up the size of the requested allocation to a certain size (I gave you this)</li>
+  <li>Try to find a block to reuse, using <strong>first-fit</strong> allocation</li>
+  <li>If it found a block, and that block can be split into two smaller blocks, do so</li>
+  <li>If it couldn’t find a block, expand the heap by moving the break with <code class="highlighter-rouge">sbrk()</code></li>
+  <li>Mark it as used</li>
+  <li>Return the pointer to the data part (after the header)</li>
+</ul>
+
+<p>Your <code class="highlighter-rouge">my_free</code> function will:</p>
+
+<ul>
+  <li>Figure out the pointer to the header</li>
+  <li>Mark the block free</li>
+  <li>Coalesce it with any neighboring blocks on either side</li>
+  <li>If it’s the last block on the heap, contract the heap by moving the break with <code class="highlighter-rouge">sbrk()</code></li>
+</ul>
+
+<div style="font-size: 200%;">
+  <p><a href="proj2_details.html">Click here for details on what you have to do.</a></p>
+</div>
+
+<hr />
+
+<h2 id="requirements-and-grading">Requirements and Grading</h2>
+
+<p><strong>Basics [30]</strong></p>
+
+<ul>
+  <li><strong>[6]</strong>  Submitted properly</li>
+  <li><strong>[4]</strong>  Compiles with the <code class="highlighter-rouge">Makefile</code> given</li>
+  <li><strong>[5]</strong>  Coding style <em>(don’t make two enormous functions, y’all.)</em></li>
+  <li><strong>[5]</strong>  Properly maintains a linked list of blocks</li>
+  <li><strong>[10]</strong> Successfully completes provided test cases
+    <ul>
+      <li>We <em>will</em> test your code with another driver besides the one we’ve given you.</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Allocation [40]</strong></p>
+
+<ul>
+  <li><strong>[10]</strong> Uses <strong>first-fit</strong> to find the first available block</li>
+  <li><strong>[10]</strong> Splits blocks when big enough to be split</li>
+  <li><strong>[10]</strong> If no free block is big enough, expands the heap with <strong>sbrk</strong></li>
+  <li><strong>[10]</strong> Always returns a valid pointer to a new or previously-unused block!</li>
+</ul>
+
+<p><strong>Deallocation [30]</strong></p>
+
+<ul>
+  <li><strong>[10]</strong> Freed blocks <strong>can be reused on subsequent allocations</strong></li>
+  <li><strong>[10]</strong> Coalesces neighboring free blocks</li>
+  <li><strong>[10]</strong> Contracts the heap with <strong>brk</strong> or <strong>sbrk</strong> when freeing the last block on the heap</li>
+</ul>
+
+<hr />
+
+<h2 id="submission">Submission</h2>
+
+<p><strong>Follow this checklist:</strong></p>
+
+<ol>
+  <li>Run <code class="highlighter-rouge">make clean</code> to remove any executables.</li>
+  <li>Include the following files in your <code class="highlighter-rouge">proj3</code> directory:
+    <ul>
+      <li><code class="highlighter-rouge">mymalloc.h</code></li>
+      <li><code class="highlighter-rouge">mymalloc.c</code></li>
+      <li><code class="highlighter-rouge">mydriver.c</code></li>
+      <li><code class="highlighter-rouge">Makefile</code></li>
+      <li><code class="highlighter-rouge">bigdriver.c</code></li>
+    </ul>
+  </li>
+  <li>Did you make a copy of that directory just in case?</li>
+  <li>Did you put your full name and username at the top of each file in comments?</li>
+</ol>
+
+<p class="important">Name your file <code class="highlighter-rouge">username_proj2.tar.gz</code> like <code class="highlighter-rouge">jfb42_proj2.tar.gz</code>.</p>
+
+<p>Now you can <a href="../labs/lab1.html#5-archives-and-submission">submit using the same directions as lab1</a>.</p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
