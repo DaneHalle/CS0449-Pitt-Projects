@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Project 3: What&#39;s the Password?</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/projects/proj3.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Project 3: What&#39;s the Password?
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Saturday 3/16 (or late on Sunday)
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<p>(project concept, portions of the writeup, and your generated executables thanks to Dr. Misurda.)</p>
+
+<p>A great way to learn how something works is to <strong>break it.</strong> This is especially true for things where you don’t know <em>how</em> they work. Many of the things we know about biology, the universe, physics etc. come from seeing what happens when things go wrong.</p>
+
+<p>The goal of this project is to <strong>recover passwords - or password patterns - for three executable files.</strong> You <strong>don’t have the source code</strong> to these programs, only the compiled executable!</p>
+
+<p>To make it more of a challenge, the programs <em>may</em> have a single, fixed password, or they <em>may</em> use some kind of algorithm to generate/check the password.</p>
+
+<p class="important">Read this section before doing anything else!</p>
+
+<p>Here’s how to set up <code class="highlighter-rouge">gdb</code> to use the Intel disassembly syntax. While logged into thoth, do this:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pico ~/.gdbinit
+</code></pre></div></div>
+
+<p>Inside that file, write this exactly:</p>
+
+<pre><code class="language-gdb">set disassembly-flavor intel
+</code></pre>
+
+<p>and save. Now, when you view disassembly in <code class="highlighter-rouge">gdb</code>, it will match the slides I gave you and will be way easier to understand overall.</p>
+
+<hr />
+
+<h2 id="40-points-mystringsc">[40 points] <code class="highlighter-rouge">mystrings.c</code></h2>
+
+<p>There are many tools that will be helpful for password-cracking. One is a program to extract <strong>readable strings</strong> from a binary file.</p>
+
+<p>A binary file can contain text, but it will be embedded within a bunch of non-text data. Here’s a snippet of an example output of the <code class="highlighter-rouge">hexdump -C</code> command, which shows the bytes in hex on the left, and their ASCII version (or . if it’s not ASCII) on the right.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>...
+000002e0  21 00 00 00 12 00 00 00  00 00 00 00 00 00 00 00  |!...............|
+000002f0  00 00 00 00 00 00 00 00  00 5f 5f 67 6d 6f 6e 5f  |.........__gmon_|
+00000300  73 74 61 72 74 5f 5f 00  6c 69 62 63 2e 73 6f 2e  |start__.libc.so.|
+00000310  36 00 70 72 69 6e 74 66  00 71 73 6f 72 74 00 5f  |6.printf.qsort._|
+00000320  5f 6c 69 62 63 5f 73 74  61 72 74 5f 6d 61 69 6e  |_libc_start_main|
+00000330  00 47 4c 49 42 43 5f 32  2e 32 2e 35 00 00 00 00  |.GLIBC_2.2.5....|
+00000340  02 00 00 00 02 00 02 00  01 00 01 00 10 00 00 00  |................|
+00000350  10 00 00 00 00 00 00 00  75 1a 69 09 00 00 02 00  |........u.i.....|
+00000360  39 00 00 00 00 00 00 00  e8 09 60 00 00 00 00 00  |9.........`.....|
+00000370  06 00 00 00 02 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000380  08 0a 60 00 00 00 00 00  07 00 00 00 01 00 00 00  |..`.............|
+00000390  00 00 00 00 00 00 00 00  10 0a 60 00 00 00 00 00  |..........`.....|
+000003a0  07 00 00 00 03 00 00 00  00 00 00 00 00 00 00 00  |................|
+000003b0  18 0a 60 00 00 00 00 00  07 00 00 00 04 00 00 00  |..`.............|
+000003c0  00 00 00 00 00 00 00 00  48 83 ec 08 e8 7b 00 00  |........H....{..|
+000003d0  00 e8 0a 01 00 00 e8 d5  02 00 00 48 83 c4 08 c3  |...........H....|
+000003e0  ff 35 12 06 20 00 ff 25  14 06 20 00 0f 1f 40 00  |.5.. ..%.. ...@.|
+000003f0  ff 25 12 06 20 00 68 00  00 00 00 e9 e0 ff ff ff  |.%.. .h.........|
+...
+</code></pre></div></div>
+
+<p>There is a UNIX program called <code class="highlighter-rouge">strings</code> which lets you search for strings within a binary file like this. You will write a little program called <code class="highlighter-rouge">mystrings</code> which will be a very simplified version of <code class="highlighter-rouge">strings</code>.</p>
+
+<hr />
+
+<h3 id="how-it-should-work">How it should work</h3>
+
+<p>Your program will be <strong>very</strong> simple. Seriously. This can be done in about 30-40 lines of C, not counting braces.</p>
+
+<p><code class="highlighter-rouge">mystrings</code> will work as follows:</p>
+
+<ul>
+  <li>You will run it like <code class="highlighter-rouge">./mystrings somefile</code>.</li>
+  <li>It will read <code class="highlighter-rouge">somefile</code> as a <strong>binary</strong> file.
+    <ul>
+      <li>It should check if the file doesn’t exist, by seeing if <code class="highlighter-rouge">fopen</code> returned <code class="highlighter-rouge">NULL</code>. If so, print an error and quit.</li>
+    </ul>
+  </li>
+  <li>It should look for sequences of 4 or more <strong>printable ASCII characters.</strong>
+    <ul>
+      <li>It should print each of those sequences on its own line.</li>
+      <li>A <strong>printable ASCII character</strong> is a <code class="highlighter-rouge">char</code> whose value is in the range 32 to 126, <strong>inclusive.</strong> So [32, 126].</li>
+    </ul>
+  </li>
+</ul>
+
+<p>That’s it.</p>
+
+<hr />
+
+<h3 id="requirements-and-tips">Requirements and Tips</h3>
+
+<p>You <strong>don’t have to support</strong> any of the extra options that the <code class="highlighter-rouge">strings</code> program supports.</p>
+
+<p>You <strong>don’t have to display tab and newline characters as embedded within strings, like <code class="highlighter-rouge">strings</code> does.</strong></p>
+
+<p>The strings are <strong>not necessarily 0-terminated!</strong> They are terminated by <em>any</em> non-printable ASCII character. So, you can’t really use <code class="highlighter-rouge">printf("%s")</code>.</p>
+
+<p>Make sure your program can handle strings that are <strong>arbitrarily long.</strong> Since you have no idea how long a string is when you start reading it, that means you can’t really allocate space to store the whole string.</p>
+
+<p class="good-important">Fortunately, you only have to <strong><em>print</em></strong> ASCII characters until you hit the end. How many characters do you really have to <em>store?</em> Do you really need to store the string at all??</p>
+
+<p>Try having a look at the functions in the C standard library, such as in <code class="highlighter-rouge">stdio.h</code> and <code class="highlighter-rouge">ctypes.h</code>. Maybe you’ll find something useful!</p>
+
+<hr />
+
+<h3 id="testing-it">Testing it</h3>
+
+<p><strong>Do not run it on text files. That’s not what it’s for.</strong> Run it on binary files! Examples include executables, object files, image files, and more. There are lots of executables in <code class="highlighter-rouge">/bin</code>, such as <code class="highlighter-rouge">/bin/ls</code>.</p>
+
+<p>You can see what your program is <em>supposed</em> to output for a file by comparing its output to the output of the real <code class="highlighter-rouge">strings</code> program. I’ve made a shell script for you:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cp /afs/pitt.edu/home/j/f/jfb42/public/cs449/testmystrings.sh <span class="nb">.</span>
+</code></pre></div></div>
+
+<p>Have a look inside it, and you will see that it runs both programs and <em>redirects</em> their output to the <code class="highlighter-rouge">strings.out</code> and <code class="highlighter-rouge">mystrings.out</code> files. Then it uses <code class="highlighter-rouge">git diff</code> to compare them.</p>
+
+<p class="aside">The <code class="highlighter-rouge">&gt; strings.out</code> is <em>redirection</em> - it sends the output of the program to the file <code class="highlighter-rouge">strings.out</code> instead of to the console.</p>
+
+<p>Now you can run it in the same directory as <code class="highlighter-rouge">mystrings</code> like:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./testmystrings.sh /bin/ls
+</code></pre></div></div>
+
+<p>If it prints nothing, then the files are identical!</p>
+
+<p><strong>Green lines</strong> mean your program is finding <em>too many</em> strings.</p>
+
+<p><strong>Red lines</strong> mean your program is <em>missing</em> strings.</p>
+
+<hr />
+
+<h2 id="60-points-password-cracking">[60 points] Password-cracking</h2>
+
+<p>I have generated <strong>three executable files for each of you.</strong></p>
+
+<p>Log into thoth. Then <code class="highlighter-rouge">cd /u/SysLab/yourusername</code>, like mine is <code class="highlighter-rouge">/u/SysLab/jfb42</code>. (The capitalization in <code class="highlighter-rouge">SysLab</code> is important.) There are your executables.</p>
+
+<p class="note-important">The <code class="highlighter-rouge">/u/SysLab/</code> directory is physically stored on thoth. You cannot access it from any other computer, and any files you put in it will disappear at the end of the term when you lose access to thoth. It’s a better idea to do all your work in your AFS space.</p>
+
+<p>So, <strong>copy the programs to your private directory</strong> by doing <code class="highlighter-rouge">cp * ~/private</code>. From there, you can do whatever you want with em.</p>
+
+<h2 id="your-goal">Your goal</h2>
+
+<p>When you run these executables, they wait for you to type something and hit enter. You must type the correct password to “unlock” them. The program will tell you whether or not you succeeded.</p>
+
+<h2 id="oh-my-god-how-do-i-even-start">OH MY GOD HOW DO I EVEN START</h2>
+
+<p>Reverse engineering is like a puzzle. You have to <strong>start with what you know.</strong> Here are some things to know:</p>
+
+<ul>
+  <li><strong><em>A program may have a *different password every time you run it!</em></strong> Make sure to test it several times, on different dates, from different computers etc.</li>
+  <li>All the programs are <strong>written in C.</strong>
+    <ul>
+      <li>The assembly you look at was generated by an algorithm, so there is <em>structure</em> to it.</li>
+    </ul>
+  </li>
+  <li>Each program will have a different password <strong>per student,</strong> but <em>how to find it</em> will be the same for everyone.</li>
+  <li>All passwords will be <strong>printable ASCII characters</strong> and be <strong>far less than 100 characters in length.</strong>
+    <ul>
+      <li>That being said, brute-forcing will probably not be productive.</li>
+    </ul>
+  </li>
+</ul>
+
+<p class="good-important" style="font-size: 300%"><a href="proj3_details.html">Here is a page with a lot more info that might be helpful for you.</a></p>
+
+<h2 id="the-writeup">The writeup</h2>
+
+<p>You will be typing up a short document which shows, for each of the three programs:</p>
+
+<ol>
+  <li>the <strong>password</strong>
+    <ul>
+      <li>it might be a <strong>single fixed string</strong></li>
+      <li>or it might be <strong>generated by an algorithm,</strong> in which case you must <strong>describe the algorithm</strong></li>
+    </ul>
+  </li>
+  <li>an explanation of <strong>how you found it</strong>
+    <ul>
+      <li>you don’t have to describe the <em>entire</em> process, but…</li>
+      <li>briefly describe any <strong>failed attempts or ideas</strong></li>
+      <li>and then describe <strong>how you succeeded.</strong></li>
+      <li><strong>If you couldn’t find the password,</strong> you can still get full credit for this part of the writeup by explaining your attempts and your theories on what the password is.</li>
+    </ul>
+  </li>
+</ol>
+
+<p><strong>This is not a writing course. Please don’t write a novel. There is no page count to hit.</strong> It only has to be between 1 and 2 pages, line spacing 1.5, 12pt font, 1 inch margins.</p>
+
+<p>Please keep it to-the-point and technical. You don’t need an intro and body and conclusion. Just write <strong>clearly and tersely.</strong> Technical writing is about <em>clarity.</em> (Humor and wit are still welcome, of course.)</p>
+
+<h1 id="grading-rubric">Grading rubric</h1>
+
+<ul>
+  <li><strong>[5] Submission</strong>
+    <ul>
+      <li>Any deviation from the submission instructions will lose you <strong>all 5 points.</strong></li>
+    </ul>
+  </li>
+  <li><strong>[35] <code class="highlighter-rouge">mystrings.c</code></strong>
+    <ul>
+      <li><strong>[5]</strong> Compiles and runs according to the specified interface
+        <ul>
+          <li>(should work with <code class="highlighter-rouge">gcc -Wall -Werror --std=c99</code>)</li>
+        </ul>
+      </li>
+      <li><strong>[10]</strong> follows the correct definition of a “string”
+        <ul>
+          <li>(at least 4 printable ASCII characters)</li>
+        </ul>
+      </li>
+      <li><strong>[10]</strong> handles strings of <strong>arbitrary length</strong>
+        <ul>
+          <li>(not just “100 characters”)</li>
+        </ul>
+      </li>
+      <li><strong>[5]</strong> output is <strong>displayed properly</strong>
+        <ul>
+          <li>(one string per line, no blank lines, no debugging info etc.)</li>
+        </ul>
+      </li>
+      <li><strong>[5]</strong> Style
+        <ul>
+          <li>(this is a tiny program but try to make it readable)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>[60] Passwords</strong>
+    <ul>
+      <li><strong>[10]</strong> Found password 1
+        <ul>
+          <li>If a program uses an algorithm for the password, but you only found <em>one</em>, it’s half credit.</li>
+        </ul>
+      </li>
+      <li><strong>[10]</strong> Found password 2</li>
+      <li><strong>[10]</strong> Found password 3</li>
+      <li><strong>[10]</strong> Writeup for password 1
+        <ul>
+          <li>remember, you can still get full writeup credit if you didn’t find the password, as long as you describe what you tried.</li>
+        </ul>
+      </li>
+      <li><strong>[10]</strong> Writeup for password 2</li>
+      <li><strong>[10]</strong> Writeup for password 3</li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="submission">Submission</h1>
+
+<p><strong>Follow this checklist for a free 5 points:</strong></p>
+
+<p>You should submit a gzipped tarball containing exactly <strong>three files:</strong></p>
+
+<ul>
+  <li><code class="highlighter-rouge">mystrings.c</code>
+    <ul>
+      <li>Your username and full name should be in the comments at the top.</li>
+      <li><strong><em>Never turn in a program that doesn’t compile.</em></strong></li>
+    </ul>
+  </li>
+  <li>Your <code class="highlighter-rouge">mystrings</code> executable</li>
+  <li>A <strong>single</strong> Word or PDF file named <code class="highlighter-rouge">&lt;username&gt;.docx/pdf</code> (like <code class="highlighter-rouge">jfb42.pdf</code>) that contains:
+    <ul>
+      <li>Your username and full name at the top</li>
+      <li>The three passwords (if you found them!)</li>
+      <li>The three program writeups</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Name your file <code class="highlighter-rouge">username_proj3.tar.gz</code> like <code class="highlighter-rouge">jfb42_proj3.tar.gz</code>.</p>
+
+<p>Now you can <a href="../labs/lab1.html#5-archives-and-submission">submit as usual.</a></p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
