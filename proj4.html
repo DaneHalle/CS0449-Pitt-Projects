@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Project 4: A Shell</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/projects/proj4.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Project 4: A Shell
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Saturday 4/6 (or late on Sunday)
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<p class="important" style="font-size:125%">While working on your shell, please limit your user processes by running <code class="highlighter-rouge">ulimit -u 20</code> after logging into thoth. You will have to do this whenever you log in. If you think you’ve forkbombed thoth, or if you think someone else forkbombed it (if it’s very slow), please EMAIL me as soon as possible so that I can clean it up.</p>
+
+<p>In this project, you’ll be making a simple Unix shell. A shell is what you interact with when you log into thoth - it’s a command-line interface for running programs.</p>
+
+<p><strong>You already did some of this project in lab 7</strong> - that’s exactly how you’ll run programs!</p>
+
+<h2 id="isnt-a-shell-a-special-kind-of-program">Isn’t a shell a special kind of program?</h2>
+
+<p>Nope! A shell is just a user-mode process that lets you interact with the operating system. The basic operation of a shell can be summed up as:</p>
+
+<ol>
+  <li>Read a command from the user</li>
+  <li>Parse that command</li>
+  <li>If the command is valid, run it</li>
+  <li>Go back to step 1</li>
+</ol>
+
+<p>The shell you interact with when you log into thoth is called <strong><code class="highlighter-rouge">bash</code></strong>. You can even run <code class="highlighter-rouge">bash</code> inside itself:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>13<span class="o">)</span> thoth <span class="nv">$ </span>bash
+<span class="o">(</span>1<span class="o">)</span>  thoth <span class="nv">$ </span>pstree &lt;yourusername&gt;
+sshd───bash───bash───pstree
+<span class="o">(</span>2<span class="o">)</span>  thoth <span class="nv">$ </span><span class="nb">exit</span>
+<span class="o">(</span>14<span class="o">)</span> thoth <span class="nv">$ </span>_
+</code></pre></div></div>
+
+<p>You’ll see the command numbers change, since you’re running <code class="highlighter-rouge">bash</code> inside of <code class="highlighter-rouge">bash</code>. <code class="highlighter-rouge">pstree</code> will also show this - a <code class="highlighter-rouge">bash</code> process nested inside another <code class="highlighter-rouge">bash</code> process!</p>
+
+<p>When you write your shell, you can test it like any other program you’ve written.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>22<span class="o">)</span> thoth <span class="nv">$ </span>./myshell
+myshell&gt; <span class="nb">ls
+</span>myshell    myshell.c
+myshell&gt; <span class="nb">exit</span>
+<span class="o">(</span>23<span class="o">)</span> thoth <span class="nv">$ </span>_
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="input-tokenization">Input tokenization</h2>
+
+<p>Use <code class="highlighter-rouge">fgets()</code> with a generously-sized input buffer, like 300 characters.</p>
+
+<p>Once you have the input, you can <em>tokenize</em> it (split it into “words”) with the <code class="highlighter-rouge">strtok()</code> function. It behaves oddly, so be sure to read up on it.</p>
+
+<p><a href="/teaching/classes/cs0449/projects/strtok.c">Here is a sample program that demonstrates <code class="highlighter-rouge">strtok</code>.</a>. Feel free to use it as the basis for your command parsing, but remember…</p>
+
+<p class="important">Since <code class="highlighter-rouge">strtok</code> operates in place, you <strong>cannot return the resulting array from a function.</strong> You have to allocate that array in the function that needs it, and pass a <code class="highlighter-rouge">char**</code> pointer as an argument.</p>
+
+<p>In the worst case where someone types e.g. <code class="highlighter-rouge">a b c d e f g h i...</code>, you could have half as many tokens as the size of your character buffer - so, 150 tokens.</p>
+
+<p>For <code class="highlighter-rouge">strtok()</code>’s “delim” parameter, you can give it this string:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">" </span><span class="se">\t\n</span><span class="s">"</span>
+</code></pre></div></div>
+
+<p class="good-important">Get the string tokenization working <em>first.</em> Test it out well, and try edge cases - typing nothing, typing many things, typing several spaces in a row, using tab characters…</p>
+
+<hr />
+
+<h2 id="commands">Commands</h2>
+
+<p>Many of the commands you’re used to running in the shell are actually <em>builtins</em> - commands that the shell understands and executes instead of having another program execute them. This makes the shell somewhat faster, because it doesn’t have to start a new process for each command.</p>
+
+<p>Anything that <strong>isn’t</strong> a builtin should be interpreted as a command to run a program.</p>
+
+<p>Following is a list of commands you need to support.</p>
+
+<hr />
+
+<h2 id="exit-and-exit-number"><code class="highlighter-rouge">exit</code> and <code class="highlighter-rouge">exit number</code></h2>
+
+<p><strong>Functions needed:</strong> <code class="highlighter-rouge">exit()</code></p>
+
+<p>The simplest command is <code class="highlighter-rouge">exit</code>, as it just… exits the shell.</p>
+
+<blockquote>
+  <p><strong>NOTE: In all these examples, <code class="highlighter-rouge">myshell&gt; </code> indicates your shell program’s prompt, and <code class="highlighter-rouge">$</code> indicates bash’s prompt.</strong></p>
+</blockquote>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./myshell
+myshell&gt; <span class="nb">exit</span>
+<span class="nv">$ </span>_
+</code></pre></div></div>
+
+<p>You also need to support giving an argument to <code class="highlighter-rouge">exit</code>. It should be a number, and it will be returned to bash. You can check it like so:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myshell&gt; <span class="nb">exit </span>45
+<span class="nv">$ </span><span class="nb">echo</span> <span class="nv">$?</span>
+45
+<span class="nv">$ </span>_
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">echo $?</code> command <em>in bash</em> will show the exit code from the last program.</p>
+
+<p>If no argument is given to <code class="highlighter-rouge">exit</code>, it should return 0:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myshell&gt; <span class="nb">exit</span>
+<span class="nv">$ </span><span class="nb">echo</span> <span class="nv">$?</span>
+0
+<span class="nv">$ </span>_
+</code></pre></div></div>
+
+<p class="good-important"><strong>Hint:</strong> there are a few functions in the C standard library you can use to parse integers from strings. You’ve used at least one before…</p>
+
+<hr />
+
+<h2 id="cd-dirname"><code class="highlighter-rouge">cd dirname</code></h2>
+
+<p><strong>Functions needed:</strong> <code class="highlighter-rouge">chdir()</code></p>
+
+<p>You know how <code class="highlighter-rouge">cd</code> works! You don’t have to do anything special for the stuff that comes after the <code class="highlighter-rouge">cd</code>. <code class="highlighter-rouge">chdir()</code> handles it all for you.</p>
+
+<p class="note-important">Really, <code class="highlighter-rouge">chdir()</code> handles it <em>all</em> for you. You don’t have to parse the path, or look for ‘..’, or make sure paths are relative/absolute etc. <code class="highlighter-rouge">chdir()</code> is like <code class="highlighter-rouge">cd</code> in function form.**</p>
+
+<p><strong>You do not need to support <code class="highlighter-rouge">cd</code> without an argument.</strong> Just regular old <code class="highlighter-rouge">cd</code>.</p>
+
+<p><strong>You do not need to support <code class="highlighter-rouge">cd ~</code>.</strong> This is actually a bash feature, but it’s kind of complicated, so don’t worry about it.</p>
+
+<p>You can see if it works properly using the <code class="highlighter-rouge">pwd</code> program, once your shell can run regular programs.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myshell&gt; <span class="nb">cd test
+</span>myshell&gt; <span class="nb">pwd</span>
+/afs/pitt.edu/home/x/y/xyz00/private/test
+myshell&gt; <span class="nb">cd</span> ..
+myshell&gt; <span class="nb">pwd</span>
+/afs/pitt.edu/home/x/y/xyz00/private
+myshell&gt; _
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="regular-programs">Regular programs</h2>
+
+<p><strong>Functions needed:</strong> <code class="highlighter-rouge">fork()</code>, <code class="highlighter-rouge">execvp()</code>, <code class="highlighter-rouge">exit()</code>, <code class="highlighter-rouge">waitpid()</code>, <code class="highlighter-rouge">signal()</code></p>
+
+<p>If something doesn’t look like any built-in command, <strong>run it as a regular program.</strong> You should support commands with or without arguments.</p>
+
+<p>You basically did this with <a href="../labs/lab7.html">lab 7</a>! You can use that as a starting point.</p>
+
+<p><strong>Your shell should support ANY number of arguments to programs, not just zero or one.</strong></p>
+
+<p>For example, <strong>and these are just examples:</strong> ANY program should be able to be run like this:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myshell&gt; <span class="nb">ls
+</span>myshell.c    myshell    Makefile
+myshell&gt; <span class="nb">pwd</span>
+/afs/pitt.edu/home/x/y/xyz00/private
+myshell&gt; <span class="nb">echo</span> <span class="s2">"hello"</span>
+<span class="s2">"hello"</span>
+myshell&gt; <span class="nb">echo </span>1 2 3 4 5
+1 2 3 4 5
+myshell&gt; touch one two three
+myshell&gt; <span class="nb">ls</span> <span class="nt">-lh</span> <span class="nb">.</span>
+total 9K
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1 2.8K Apr  9 22:04 myshell.c
+<span class="nt">-rwxr-xr-x</span> 1 xyz00 UNKNOWN1 4.4K Apr  9 22:04 myshell
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1  319 Apr  9 18:51 Makefile
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1    0 Apr  9 22:05 one
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1    0 Apr  9 22:05 two
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1    0 Apr  9 22:05 three
+myshell&gt; _
+</code></pre></div></div>
+
+<h3 id="catching-ctrlc">Catching Ctrl+C</h3>
+
+<p>Ctrl+C is a useful way to stop a running process. However by default, if you Ctrl+C while a child process is running, the parent will terminate too. So if you try to use it while running a program in your shell…</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./myshell
+myshell&gt; <span class="nb">cat
+</span>typing stuff here...
+typing stuff here...
+<span class="nb">cat </span>just copies everything I type.
+<span class="nb">cat </span>just copies everything I type.
+&lt;ctrl+C&gt;
+<span class="nv">$ </span>_
+</code></pre></div></div>
+
+<p>I tried to exit <code class="highlighter-rouge">cat</code> by using Ctrl+C but it exited my shell too!</p>
+
+<p>Making this work right is pretty easy.</p>
+
+<ul>
+  <li>At the beginning of <code class="highlighter-rouge">main</code>, set it to <em>ignore</em> SIGINT.</li>
+  <li>In the child process <strong>(after <code class="highlighter-rouge">fork</code> but before <code class="highlighter-rouge">exec</code>)</strong>, set its <code class="highlighter-rouge">SIGINT</code> behavior to the <em>default.</em></li>
+</ul>
+
+<p>Once that’s done, you can use Ctrl+C with abandon:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./myshell
+myshell&gt; <span class="nb">cat
+</span>blah
+blah
+blahhhhh
+blahhhhh
+&lt;ctrl+C&gt;
+myshell&gt; <span class="nb">exit</span>
+<span class="nv">$ </span>_
+</code></pre></div></div>
+
+<h3 id="the-parent-process">The Parent Process</h3>
+
+<p>After using <code class="highlighter-rouge">fork()</code>, the parent process should wait for its child to complete. Things to make sure to implement:</p>
+
+<ul>
+  <li>Make sure to check the return value from <code class="highlighter-rouge">waitpid</code> to see if it failed. (This is just like in lab7.)</li>
+  <li>If the child did <em>not</em> exit normally (<code class="highlighter-rouge">WIFEXITED</code> gives false):
+    <ul>
+      <li>if the child terminated due to a signal, print out which signal killed it. (Again, lab7!)</li>
+      <li>otherwise, just say it terminated abnormally.</li>
+    </ul>
+  </li>
+</ul>
+
+<p class="good-important">If you get errors about “implicit declaration of function ‘strsignal’” then add <code class="highlighter-rouge">#define _GNU_SOURCE</code> to the very top of your code, before any <code class="highlighter-rouge">#include</code> lines.</p>
+
+<h3 id="the-child-process">The Child Process</h3>
+
+<p>After using <code class="highlighter-rouge">fork()</code>, the child process is responsible for running the program. Things to make sure to implement:</p>
+
+<ul>
+  <li>Set the SIGINT behavior to the default (as explained above in the Ctrl+C section).</li>
+  <li>Use <code class="highlighter-rouge">execvp</code> to run the program.</li>
+  <li>Print an error if <code class="highlighter-rouge">execvp</code> failed.</li>
+</ul>
+
+<p class="important">AND THEN…. exit() after you print the error. DON’T FORGET TO EXIT HERE. This is how you forkbomb. <em>If you forkbomb thoth multiple times, even if by accident, you may have your login privileges revoked.</em></p>
+
+<p>Notes on using <code class="highlighter-rouge">execvp</code>:</p>
+
+<ul>
+  <li>The way <code class="highlighter-rouge">execvp</code> detects how many arguments you’ve given it is by <strong>putting a NULL string pointer as the “last” argument.</strong> You must put the NULL in your arguments array yourself, after parsing the user input. (The <code class="highlighter-rouge">strtok</code> example above does this.)</li>
+  <li><code class="highlighter-rouge">execvp</code> <em>only</em> returns if it failed. So you don’t technically need to check its return value.</li>
+</ul>
+
+<hr />
+
+<h2 id="input-and-output-redirection">Input and Output redirection</h2>
+
+<p><strong>Functions needed:</strong> <code class="highlighter-rouge">freopen()</code></p>
+
+<p>Any regular program should also support having its stdin, stdout, <strong>or both</strong> redirected with the <code class="highlighter-rouge">&lt;</code> and <code class="highlighter-rouge">&gt;</code> symbols.</p>
+
+<p class="important">The redirections can come in either order, like <code class="highlighter-rouge">cat &lt; input &gt; output</code> or <code class="highlighter-rouge">cat &gt; output &lt; input</code>. Do not hardcode your shell to assume one will come before the other.</p>
+
+<p>Your shell should support using input and output redirection on any <em>non-builtin command</em> with <em>any number of parameters.</em></p>
+
+<p>This means you should look for the redirections by looking starting at the <em>last</em> tokens. Then you can replace each redirection token (<code class="highlighter-rouge">&lt;</code> and <code class="highlighter-rouge">&gt;</code>) with NULL to ensure the right arguments get passed to the program.</p>
+
+<p class="good-important">bash lets you write <code class="highlighter-rouge">ls&gt;out</code> without spaces, but you don’t have to support that. <code class="highlighter-rouge">ls &gt; out</code> is fine for your shell.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myshell&gt; <span class="nb">ls</span> <span class="o">&gt;</span> output
+myshell&gt; <span class="nb">cat </span>output
+myshell.c
+myshell
+Makefile
+output
+myshell&gt; less &lt; Makefile
+
+&lt;<span class="k">then </span>less runs and shows the makefile&gt;
+
+myshell&gt; <span class="nb">cat</span> &lt; Makefile <span class="o">&gt;</span> copy
+myshell&gt; <span class="nb">ls
+</span>myshell.c    myshell    Makefile    output    copy
+myshell&gt; less copy
+
+&lt;<span class="k">then </span>less runs and shows that <span class="s1">'copy'</span> is identical to the original makefile&gt;
+
+myshell&gt; <span class="nb">ls</span> <span class="nt">-lh</span> <span class="nb">.</span> <span class="o">&gt;</span> output
+myshell&gt; <span class="nb">cat </span>output
+total 31K
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1 2.8K Apr  9 23:18 myshell.c
+<span class="nt">-rwxr-xr-x</span> 1 xyz00 UNKNOWN1 4.4K Apr  9 23:18 myshell
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1  319 Apr  9 18:51 Makefile
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1   39 Apr  9 23:20 output
+<span class="nt">-rw-r--r--</span> 1 xyz00 UNKNOWN1  319 Apr  9 23:21 copy
+myshell&gt; _
+</code></pre></div></div>
+
+<p>Input and output redirection should detect and report the following errors:</p>
+
+<ul>
+  <li>If the user tried to redirect stdin or stdout <strong>more than once</strong>
+    <ul>
+      <li>e.g. <code class="highlighter-rouge">ls &gt; out1 &gt; out2</code></li>
+      <li>or <code class="highlighter-rouge">cat &lt; file1 &lt; file2</code></li>
+    </ul>
+  </li>
+  <li>If the file to read or write could not be opened</li>
+</ul>
+
+<h3 id="opening-the-redirection-files">Opening the redirection files</h3>
+
+<p>You should open the redirection files <strong>in the child process after using <code class="highlighter-rouge">fork</code>,</strong> but <strong>before using <code class="highlighter-rouge">execvp()</code>.</strong></p>
+
+<p>In order to redirect stdin and stdout, you have to open new files to take their place. <code class="highlighter-rouge">freopen()</code> is the right choice for this.</p>
+
+<ul>
+  <li>When opening a file for redirecting <code class="highlighter-rouge">stdin</code>, you want to open the file as read-only.</li>
+  <li>When opening a file for redirecting <code class="highlighter-rouge">stdout</code>, you want to open the file as write-only.</li>
+</ul>
+
+<hr />
+
+<h2 id="grading-breakdown">Grading Breakdown</h2>
+
+<p><strong>Basics [20]</strong></p>
+
+<ul>
+  <li><strong>[6]</strong>  Submitted properly</li>
+  <li><strong>[4]</strong>  Compiles with <code class="highlighter-rouge">gcc --std=c99 -Wall -Werror -o myshell myshell.c</code></li>
+  <li><strong>[10]</strong> Code style. This includes:
+    <ul>
+      <li>Splitting code into sensible functions</li>
+      <li>Properly deallocating any memory you allocate</li>
+      <li>Naming things reasonably</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Note:</strong> Error handling is not explicitly mentioned in any of the following, but you should be checking for errors in everything. You’ll lose points if not.</p>
+
+<p><strong>Builtins [30]</strong></p>
+
+<ul>
+  <li><strong>[10]</strong>  <code class="highlighter-rouge">exit</code> exits the program</li>
+  <li><strong>[10]</strong>  <code class="highlighter-rouge">exit xx</code> exits the program with exit code xx</li>
+  <li><strong>[10]</strong>  <code class="highlighter-rouge">cd dir</code> changes the current directory to <code class="highlighter-rouge">dir</code></li>
+</ul>
+
+<p><strong>Regular Programs [30]</strong></p>
+
+<ul>
+  <li><strong>[5]</strong>  SIGINT (ctrl+C) is properly handled - does nothing in your shell, but can interrupt running programs (like <code class="highlighter-rouge">cat</code>)</li>
+  <li><strong>[10]</strong>  Can run a regular program, period</li>
+  <li><strong>[10]</strong> Can run a regular program with an arbitrary number of arguments</li>
+  <li><strong>[5]</strong>  Displays a human-readable message about what signal killed a program (e.g. if you ctrl+C in <code class="highlighter-rouge">cat</code>)</li>
+</ul>
+
+<p><strong>Redirection [20]</strong></p>
+
+<ul>
+  <li><strong>[8]</strong> Input redirection <code class="highlighter-rouge">&lt;</code> works and gives an error if input is redirected more than once</li>
+  <li><strong>[8]</strong> Output redirection <code class="highlighter-rouge">&gt;</code> works and gives an error if output is redirected more than once</li>
+  <li><strong>[4]</strong> Input and output redirection can be used <em>at the same time, in either order</em>
+    <ul>
+      <li>i.e. <code class="highlighter-rouge">cat &lt; input &gt; output</code> or <code class="highlighter-rouge">cat &gt; output &lt; input</code> should do the same thing)</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="submission-instructions">Submission Instructions</h2>
+
+<ol>
+  <li>Name your file <code class="highlighter-rouge">myshell.c</code>.</li>
+  <li>At the top of the file, put your username and full name in comments.</li>
+  <li>Comment your code, at least enough to explain what each function does.</li>
+</ol>
+
+<p>Now you can <a href="../labs/lab1.html#5-archives-and-submission">submit as usual.</a></p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
