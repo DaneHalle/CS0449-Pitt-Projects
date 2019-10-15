@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Project 1 - Hangman and WAV files</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/projects/proj1.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Project 1 - Hangman and WAV files
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Saturday 1/26 (or late on Sunday)
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<h1 id="30-hangmanc">[30%] <code class="highlighter-rouge">hangman.c</code></h1>
+
+<p>Hangman is a word-guessing game. In Hangman, a word is chosen. You are shown a sequence of blanks, one for each character, so you know how long the word is. You must guess the word by guessing which letters are in it.</p>
+
+<p>Every time you guess a letter <strong>correctly,</strong> all copies of that letter are revealed. If you guess all the letters, <em>or</em> if you guess the word, you win.</p>
+
+<p>Every time you guess a letter or the word <strong>incorrectly,</strong> you get a strike. When you get <strong>five strikes,</strong> the game is over and you lose.</p>
+
+<p>Here is a sample game of the player guessing the word “apple” successfully:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./hangman
+Welcome to hangman! Your word has 5 letters:
+_ _ _ _ _ Guess a letter or type the whole word: s
+Strike 1!
+_ _ _ _ _ Guess a letter or type the whole word: e
+_ _ _ _ e Guess a letter or type the whole word: a
+a _ _ _ e Guess a letter or type the whole word: p
+a p p _ e Guess a letter or type the whole word: appie
+Strike 2!
+a p p _ e Guess a letter or type the whole word: apple
+You got it! The word was 'apple'.
+</code></pre></div></div>
+
+<p>Notice when they guessed <code class="highlighter-rouge">'p'</code>, it showed <em>all</em> the <strong>p</strong>’s in the word.</p>
+
+<p>And here they are failing to guess the word “apple”:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./hangman
+Welcome to hangman! Your word has 5 letters:
+_ _ _ _ _ Guess a letter or type the whole word: s
+Strike 1!
+_ _ _ _ _ Guess a letter or type the whole word: after
+Strike 2!
+_ _ _ _ _ Guess a letter or type the whole word: x
+Strike 3!
+_ _ _ _ _ Guess a letter or type the whole word: q
+Strike 4!
+_ _ _ _ _ Guess a letter or type the whole word: s
+Strike 5!
+Sorry, you lost! The word was 'apple'.
+</code></pre></div></div>
+
+<p>Notice they guessed the letter <code class="highlighter-rouge">'s'</code> twice. You <strong>don’t</strong> have to remember “wrong” letters. They can just look at their previous guesses 😜</p>
+
+<p class="good-important">Last, to help with testing and grading, your program should accept one command-line argument as the word to guess:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./hangman scrumbus
+Welcome to hangman! Your word has 8 letters:
+_ _ _ _ _ _ _ _ Guess a letter or type the whole word: s
+s _ _ _ _ _ _ s Guess a letter or type the whole word: u
+s _ _ u _ _ u s Guess a letter or type the whole word: scrumbus
+You got it! The word was 'scrumbus'.
+</code></pre></div></div>
+
+<p>That way, you can run it with a known word and see if it behaves the way you expect.</p>
+
+<hr />
+
+<h2 id="the-dictionary">The Dictionary</h2>
+
+<p>I am providing you with a <strong>text file</strong> containing a dictionary of words to use. <a href="/teaching/classes/cs0449/projects/dictionary.txt">Here it is.</a> Right-click and save the link. You’ll have to upload it to your AFS space with your SFTP client.</p>
+
+<p>If you open this file, you will see a number on the first line, and then a bunch of words.</p>
+
+<p>The <strong>first line</strong> says how many words there are in the dictionary. Then, each line after that is one word.</p>
+
+<p>So, to read the dictionary:</p>
+
+<ol>
+  <li>Read the first line with <code class="highlighter-rouge">fgets</code> and use <code class="highlighter-rouge">atoi</code> (from <code class="highlighter-rouge">stdlib.h</code>) or <code class="highlighter-rouge">sscanf</code> (from <code class="highlighter-rouge">stdio.h</code>) to parse the number out of it.</li>
+  <li>Create an <strong>array of strings</strong> with that length.
+    <ul>
+      <li>You can use the syntax <code class="highlighter-rouge">char words[length][20]</code> to make the array.</li>
+      <li>This will limit each word to 19 characters, but none of the words are nearly that long.</li>
+    </ul>
+  </li>
+  <li>Read each subsequent line of the file into the array.
+    <ul>
+      <li>You can use <code class="highlighter-rouge">words[i]</code> and <code class="highlighter-rouge">sizeof(words[i])</code> the way you’re used to.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="tips">Tips:</h3>
+
+<ul>
+  <li><strong>Remember to check if <code class="highlighter-rouge">fopen</code> returned <code class="highlighter-rouge">NULL</code>!</strong>
+    <ul>
+      <li>If so, you can return from main or use <code class="highlighter-rouge">exit</code> from <code class="highlighter-rouge">stdlib.h</code> to exit the program.</li>
+    </ul>
+  </li>
+  <li><strong>Feel free to use any example code I have given you.</strong>
+    <ul>
+      <li>Things like <code class="highlighter-rouge">get_line</code>, <code class="highlighter-rouge">streq_nocase</code> etc will be helpful.</li>
+      <li>You’ll probably want to make a version of <code class="highlighter-rouge">get_line</code> to read from an arbitrary <code class="highlighter-rouge">FILE*</code> instead of only <code class="highlighter-rouge">stdin</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Test your code before you make the game.</strong>
+    <ul>
+      <li>Print out the dictionary after reading it into the array.</li>
+      <li>If you’re getting blank lines between words, you probably didn’t chop the <code class="highlighter-rouge">\n</code> off the lines when you read them.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="the-game">The game</h2>
+
+<p><strong>Once you’re sure you’re reading the dictionary in properly,</strong> you can move onto the game.</p>
+
+<p>It works like this:</p>
+
+<ol>
+  <li>Pick a random word from the dictionary (see below).
+    <ul>
+      <li>Alternatively, if <code class="highlighter-rouge">argc &gt; 1</code>, use <code class="highlighter-rouge">argv[1]</code> as the word instead.</li>
+    </ul>
+  </li>
+  <li>Tell the player how many letters there are in the word.</li>
+  <li>In a loop:
+    <ol>
+      <li>Show the current state of the word (see the interactions above to see how to print it out).</li>
+      <li>Ask the user for a letter or word.</li>
+      <li>If they didn’t type anything, go back to the previous step and ask them again.</li>
+      <li>If they typed a single letter,
+        <ul>
+          <li>If it’s in the word at least once, mark all instances of that letter as “revealed”.
+            <ul>
+              <li>If all the letters are revealed, <strong>they win, and the program is over.</strong></li>
+            </ul>
+          </li>
+          <li>If it’s not in the word, they get a strike. Show how many strikes they have.</li>
+        </ul>
+      </li>
+      <li>If they typed a word (more than 1 letter),
+        <ul>
+          <li>If it’s correct (equal to the word you picked), <strong>they win, and the program is over.</strong></li>
+          <li>If it’s not correct, they get a strike. Show how many strikes they have.</li>
+        </ul>
+      </li>
+      <li>If they have 5 strikes, <strong>they lose, and the program is over.</strong>
+        <ul>
+          <li>Show them the correct word.</li>
+        </ul>
+      </li>
+    </ol>
+  </li>
+</ol>
+
+<p>Notes:</p>
+
+<ul>
+  <li>If they guess a letter they have guessed before, <strong>don’t handle it specially.</strong>
+    <ul>
+      <li>If they guess a correct letter twice, nothing bad will happen.</li>
+      <li>If they guess an incorrect letter twice, that’s the user’s fault 😜</li>
+    </ul>
+  </li>
+  <li><strong>Try to split things into functions.</strong></li>
+  <li><strong>Do not add extra prompts/questions, and do not be too picky about user input.</strong>
+    <ul>
+      <li>Accept lower- AND upper-case letters for their guesses, using <code class="highlighter-rouge">streq_nocase</code> from lab2.</li>
+      <li>User experience is an important part of program design!
+        <ul>
+          <li>And it will make it faster and easier to grade your projects ;)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="random-numbers">Random numbers</h3>
+
+<p>To generate random numbers:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">#include &lt;stdlib.h&gt;</code> and <code class="highlighter-rouge">#include &lt;time.h&gt;</code></li>
+  <li>
+    <p><strong>ONCE</strong> at the beginning of the program, “seed” the random number generator like so:</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">srand</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">time</span><span class="p">(</span><span class="nb">NULL</span><span class="p">));</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p class="aside">This method will generate slightly biased results and should not be used to generate a range of random numbers in general. For something this simple, it’s fine.</p>
+
+<ul>
+  <li>
+    <p>When you need an <strong>exclusive</strong> range of random numbers such as <code class="highlighter-rouge">[0, 2)</code> do this:</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">rand</span><span class="p">()</span> <span class="o">%</span> <span class="p">(</span><span class="n">high_value</span> <span class="o">-</span> <span class="n">low_value</span><span class="p">)</span> <span class="o">+</span> <span class="n">low_value</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><strong>Write a function</strong> to do this. <code class="highlighter-rouge">random_range(1, 10)</code> makes more sense and is more readable than <code class="highlighter-rouge">rand() % 9 + 1</code>.</p>
+  </li>
+</ul>
+
+<hr />
+<hr />
+<hr />
+
+<h1 id="65-waveditc">[65%] <code class="highlighter-rouge">wavedit.c</code></h1>
+
+<p>Now you’ll write a program to read and do simple operations on a common sound file format called WAV.</p>
+
+<p>The way we record sound is by recording how the air pressure changes over time. In digital sound, we take thousands of measurements (“samples”) each second, and store each measurement as a number.</p>
+
+<p>Here’s a diagram of a simple sound wave, represented by the red line; and the digital version of it, represented by the individual blue dots. Each dot is one sample, and each sample can be one of 16 different values.</p>
+
+<p><img src="proj1_digital_audio.png" alt="" /> <em>Thanks, Wikipedia. Thikipedia.</em></p>
+
+<hr />
+
+<h2 id="the-wav-file-format">The WAV file format</h2>
+
+<p class="aside">If you’re curious, chunk-based file formats are very common and pretty simple and flexible. <a href="https://docs.python.org/3.7/library/chunk.html" target="_blank">Python even has a library for them.</a> Cause, like, of course it does.</p>
+
+<p>WAV files use a binary file format called RIFF, which is a “chunk-based” file format. However, the file format is simple enough that we can kind of treat it as a fixed format.</p>
+
+<p><strong>At the very beginning of the file,</strong> this structure appears (offsets and sizes are measured in bytes). What these fields should contain is explained a little further down.</p>
+
+<table class="basic">
+  <thead>
+    <tr>
+      <th style="text-align: center">Offset</th>
+      <th style="text-align: center">Size</th>
+      <th style="text-align: left">Name</th>
+      <th style="text-align: left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">0</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">riff_id</code></td>
+      <td style="text-align: left"><em>chunk ID</em></td>
+    </tr>
+    <tr>
+      <td style="text-align: center">4</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">file_size</code></td>
+      <td style="text-align: left">size of rest of file, in bytes</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">8</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">wave_id</code></td>
+      <td style="text-align: left"><em>WAV file ID</em></td>
+    </tr>
+    <tr>
+      <td style="text-align: center">12</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">fmt_id</code></td>
+      <td style="text-align: left"><em>chunk ID</em></td>
+    </tr>
+    <tr>
+      <td style="text-align: center">16</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">fmt_size</code></td>
+      <td style="text-align: left">size of the format info, in bytes</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">20</td>
+      <td style="text-align: center">2</td>
+      <td style="text-align: left"><code class="highlighter-rouge">data_format</code></td>
+      <td style="text-align: left">how the data is encoded</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">22</td>
+      <td style="text-align: center">2</td>
+      <td style="text-align: left"><code class="highlighter-rouge">number_of_channels</code></td>
+      <td style="text-align: left">how many channels (mono, stereo, surround etc)</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">24</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">samples_per_second</code></td>
+      <td style="text-align: left">how many times per second the pressure was measured</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">28</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">bytes_per_second</code></td>
+      <td style="text-align: left">how many bytes per second of sound</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">32</td>
+      <td style="text-align: center">2</td>
+      <td style="text-align: left"><code class="highlighter-rouge">block_alignment</code></td>
+      <td style="text-align: left">how many bytes per sample of all channels</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">34</td>
+      <td style="text-align: center">2</td>
+      <td style="text-align: left"><code class="highlighter-rouge">bits_per_sample</code></td>
+      <td style="text-align: left">how many bits each pressure measurement is</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">36</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">data_id</code></td>
+      <td style="text-align: left"><em>chunk ID</em></td>
+    </tr>
+    <tr>
+      <td style="text-align: center">40</td>
+      <td style="text-align: center">4</td>
+      <td style="text-align: left"><code class="highlighter-rouge">data_size</code></td>
+      <td style="text-align: left">size of the sound data, in bytes</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>You must <strong>make a struct</strong> to represent this file header. (You could name it <code class="highlighter-rouge">WAVHeader</code> or something.)</p>
+
+<p>When converting this table to a struct, keep these things in mind when deciding what types to use:</p>
+
+<ul>
+  <li>The four <code class="highlighter-rouge">_id</code> members are <code class="highlighter-rouge">char</code> arrays.
+    <ul>
+      <li>Look at the size to see how long they should be.</li>
+    </ul>
+  </li>
+  <li>All the other members are <strong>unsigned integers.</strong>
+    <ul>
+      <li>The size will decide which type they should be.</li>
+      <li>Look back at your exploration from lab 2 to see which types are which size.</li>
+    </ul>
+  </li>
+  <li>This whole struct should be <strong>44 bytes.</strong>
+    <ul>
+      <li>You can print <code class="highlighter-rouge">sizeof(WAVHeader)</code> or whatever you’ve named it to check.</li>
+    </ul>
+  </li>
+  <li>If you like, there is a header file called <code class="highlighter-rouge">stdint.h</code> which contains shorter, more precise type names for integers.
+    <ul>
+      <li><code class="highlighter-rouge">uint8_t</code>, <code class="highlighter-rouge">uint16_t</code>, <code class="highlighter-rouge">uint32_t</code>, and <code class="highlighter-rouge">uint64_t</code> are unsigned 8-, 16-, 32-, and 64-bit integer types.</li>
+      <li>You use them like any other type, e.g. <code class="highlighter-rouge">uint8_t x;</code> makes an unsigned 8-bit integer variable <code class="highlighter-rouge">x</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="your-program">Your program</h2>
+
+<p>OK, enough talk, let’s program!</p>
+
+<p>You will make a utility that can:</p>
+
+<ul>
+  <li>Check if a file really is a WAV file</li>
+  <li>If it is, read and display useful information about it</li>
+  <li>Change its speed</li>
+  <li>Reverse the sound</li>
+</ul>
+
+<p>Your program will work as a command-line program taking command-line arguments – <strong>NOT</strong> asking  for input with <code class="highlighter-rouge">fgets</code>!</p>
+
+<p>You will be able to run it four different ways:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./wavedit
+./wavedit somefile.wav
+./wavedit somefile.wav -rate 22050
+./wavedit somefile.wav -reverse
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="no-arguments-wavedit">No arguments: <code class="highlighter-rouge">./wavedit</code></h2>
+
+<p>When run like this, your program should show a help message telling how to use it.</p>
+
+<p>Try running <code class="highlighter-rouge">cat --help</code> on thoth to see what this kind of help or “usage” information usually looks like. Then make yours look kind of similar. :)</p>
+
+<hr />
+
+<h2 id="one-argument-wavedit-filename">One argument: <code class="highlighter-rouge">./wavedit FILENAME</code></h2>
+
+<p>When run like this, the first argument (<code class="highlighter-rouge">argv[1]</code>) will be the name of a file.</p>
+
+<p>This should:</p>
+
+<ol>
+  <li>Check that the file exists (by using <code class="highlighter-rouge">fopen</code>)
+    <ul>
+      <li>Which mode should you use to <strong>read</strong> a <strong>binary file?</strong></li>
+    </ul>
+  </li>
+  <li>Check that it really is a WAV file (see below)</li>
+  <li>Display the format information and some other information. (see below)</li>
+  <li>Don’t forget to close the file.</li>
+</ol>
+
+<p><strong>Make a function for each of these steps.</strong> Then it’ll be easy to reuse them for the other modes.</p>
+
+<h3 id="checking-that-a-file-really-is-a-wav-file">Checking that a file really is a WAV file</h3>
+
+<p>Remember from class that a file extension is just part of its name, and doesn’t mean that the file really is what it says it is. So, you must check the data in the file to ensure that it’s valid.</p>
+
+<p><strong>If any of these checks fail,</strong> display a message saying it’s an invalid WAV file and exit. Here’s how to check:</p>
+
+<ol>
+  <li>Make a variable of your <code class="highlighter-rouge">WAVHeader</code> struct.</li>
+  <li>Use <strong>a single <code class="highlighter-rouge">fread</code> call</strong> to read the struct from the file.</li>
+  <li>Ensure that these fields have these values:
+    <ul>
+      <li><code class="highlighter-rouge">riff_id</code> should contain the characters <code class="highlighter-rouge">"RIFF"</code></li>
+      <li><code class="highlighter-rouge">wave_id</code> should contain the characters <code class="highlighter-rouge">"WAVE"</code></li>
+      <li><code class="highlighter-rouge">fmt_id</code> should contain the characters <code class="highlighter-rouge">"fmt "</code> (<strong>NOTE: there is a space in there!</strong>)</li>
+      <li><code class="highlighter-rouge">data_id</code> should contain the characters <code class="highlighter-rouge">"data"</code></li>
+      <li><code class="highlighter-rouge">fmt_size</code> should be <strong>16</strong></li>
+      <li><code class="highlighter-rouge">data_format</code> should be <strong>1</strong></li>
+      <li><code class="highlighter-rouge">number_of_channels</code> should be <strong>1 or 2</strong></li>
+      <li><code class="highlighter-rouge">samples_per_second</code> should be <strong>greater than 0 and less than or equal to 192000</strong></li>
+      <li><code class="highlighter-rouge">bits_per_sample</code> should be <strong>8 or 16</strong></li>
+      <li><code class="highlighter-rouge">bytes_per_second</code> should be <code class="highlighter-rouge">samples_per_second * (bits_per_sample)/8 * number_of_channels</code></li>
+      <li><code class="highlighter-rouge">block_alignment</code> should be <code class="highlighter-rouge">(bits_per_sample)/8 * number_of_channels</code></li>
+    </ul>
+  </li>
+</ol>
+
+<p class="important"><strong>To check the four <code class="highlighter-rouge">_id</code> fields,</strong> you <strong>CANNOT</strong> use <code class="highlighter-rouge">strcmp</code>/<code class="highlighter-rouge">streq</code>, because these are <em>not</em> C-style strings. They have no 0 terminator. Instead, use <code class="highlighter-rouge">strncmp</code>. Look it up!</p>
+
+<h3 id="displaying-the-information">Displaying the information</h3>
+
+<p>You should display the following information:</p>
+
+<ul>
+  <li>The number of bits per sample</li>
+  <li>The sample rate (samples per second), as Hz</li>
+  <li>Whether it is mono (1 channel) or stereo (2 channels)</li>
+  <li>The length of the data in <strong>samples</strong> (<code class="highlighter-rouge">data_size / block_alignment</code>)</li>
+  <li>The length of the data in <strong>seconds</strong> (length in <strong>samples</strong>, divided by <code class="highlighter-rouge">samples_per_second</code>)
+    <ul>
+      <li>You’re gonna get a fraction here, so you <strong>must cast one of the values to a <code class="highlighter-rouge">float</code>!</strong></li>
+      <li>Display this value with <strong>3 digits</strong> after the decimal point.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>As an example, here is what my program outputs on the <code class="highlighter-rouge">sine440_16.wav</code> test file:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>This is a 16-bit 44100Hz mono sound.
+It is 99225 samples (2.250 seconds) long.
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="setting-the-sounds-sample-rate-wavedit-somefilewav--rate-22050">Setting the sound’s sample rate: <code class="highlighter-rouge">./wavedit somefile.wav -rate 22050</code></h2>
+
+<p>This will <strong>change</strong> the file, by setting its <code class="highlighter-rouge">samples_per_second</code> field to the given number. It should:</p>
+
+<ol>
+  <li>Parse the argument after the <code class="highlighter-rouge">-rate</code> argument, and ensure that it is <strong>greater than 0 and less than or equal to 192000.</strong>
+    <ul>
+      <li>Give an error and exit if not.</li>
+    </ul>
+  </li>
+  <li>Open the file and read the header
+    <ul>
+      <li>You’ll have to open it for <strong>reading AND writing</strong></li>
+    </ul>
+  </li>
+  <li>Check that it really is a WAV file, like before</li>
+  <li>Set the <code class="highlighter-rouge">samples_per_second</code> in the struct to the rate given on the command line.</li>
+  <li>Set the <code class="highlighter-rouge">bytes_per_second</code> in the struct to a new value calculated as:
+    <ul>
+      <li><code class="highlighter-rouge">samples_per_second * (bits_per_sample)/8 * number_of_channels</code></li>
+    </ul>
+  </li>
+  <li>Seek back to the <strong>beginning of the file</strong></li>
+  <li><code class="highlighter-rouge">fwrite</code> the struct back out to the file</li>
+  <li>Don’t forget to close the file!</li>
+</ol>
+
+<h3 id="did-i-do-it-right">Did I do it right?</h3>
+
+<p class="aside">If you set the rate too high, your computer might refuse to play it. If so, try to stay at 48000 Hz and below.</p>
+
+<p>Now, if you read the file’s properties again, everything should be the same, except the rate should have changed. If it says that the header is invalid, maybe you forgot to update the <code class="highlighter-rouge">bytes_per_second</code> value in the header.</p>
+
+<p>Also, you can download the file with your SFTP client, and play it, and it should sound faster or slower :)</p>
+
+<p class="important">Warning: iTunes likes to do stupid shit and will make copies of your files when you open them, and you’ll think your program isn’t working, when it is. This happened to me. Either delete the files from iTunes after listening, or use a different media player (VLC?).</p>
+
+<hr />
+
+<h2 id="reversing-a-sound-wavedit-somefilewav--reverse">Reversing a sound: <code class="highlighter-rouge">./wavedit somefile.wav -reverse</code></h2>
+
+<p>This will <strong>change</strong> the file, by reading all the samples, reversing them, and then writing them all back out again. It should work on 8- or 16-bit, mono or stereo sounds.</p>
+
+<p>Here’s what it should do</p>
+
+<ol>
+  <li>Open the file and read the header
+    <ul>
+      <li>You’ll have to open it for <strong>reading AND writing</strong></li>
+    </ul>
+  </li>
+  <li>Check that it really is a WAV file, like before</li>
+  <li>Calculate the <strong>data length in samples,</strong> like before</li>
+  <li>Allocate an array of the right type and that length (see below)</li>
+  <li><strong>Use a single <code class="highlighter-rouge">fread</code> call</strong> to read the whole array from the file
+    <ul>
+      <li>After you read the header, the file is already in the right place to read the data</li>
+    </ul>
+  </li>
+  <li>Reverse the array’s values
+    <ul>
+      <li>That is, swap the first and last values; then the second and second-to-last; etc.</li>
+    </ul>
+  </li>
+  <li>Seek back to the beginning of the file plus <code class="highlighter-rouge">sizeof(WAVHeader)</code></li>
+  <li><strong>Use a single <code class="highlighter-rouge">fwrite</code> call</strong> to write the whole array back to the file</li>
+  <li>Don’t forget to close the file!</li>
+</ol>
+
+<h3 id="how-samples-are-stored">How samples are stored</h3>
+
+<p>For <strong>mono</strong> (1-channel) sounds, the samples are simply an array. If <code class="highlighter-rouge">bits_per_sample</code> is 8, it’s an array of 8-bit integers. If it’s 16, it’s an array of 16-bit integers.</p>
+
+<p>For <strong>stereo</strong> (2-channel) sounds, each sample is stored as a <strong>pair</strong> of 8- or 16-bit integers. The first number in the pair is the left channel’s sample, and the second number is the right channel’s.</p>
+
+<p>Since your reversing function doesn’t have to treat the stereo channels individually, you can treat the data array as follows:</p>
+
+<ul>
+  <li>If <code class="highlighter-rouge">bits_per_sample</code> is 8 and <code class="highlighter-rouge">number_of_channels</code> is 1:
+    <ul>
+      <li>treat it as an array of <strong>8-bit integers.</strong></li>
+    </ul>
+  </li>
+  <li>If <code class="highlighter-rouge">bits_per_sample</code> is 16 and <code class="highlighter-rouge">number_of_channels</code> is 1; OR</li>
+  <li>If <code class="highlighter-rouge">bits_per_sample</code> is 8 and <code class="highlighter-rouge">number_of_channels</code> is 2:
+    <ul>
+      <li>treat it as an array of <strong>16-bit integers.</strong></li>
+    </ul>
+  </li>
+  <li>If <code class="highlighter-rouge">bits_per_sample</code> is 16 and <code class="highlighter-rouge">number_of_channels</code> is 2:
+    <ul>
+      <li>treat it as an array of <strong>32-bit integers.</strong></li>
+    </ul>
+  </li>
+</ul>
+
+<p>Since C doesn’t have generics or function overloading, you’ll have to repeat this code three times, but with different types. Sorry <code class="highlighter-rouge">¯\_(ツ)_/¯</code></p>
+
+<p>You can allocate the arrays like in hangman: <code class="highlighter-rouge">sometype samples[sample_length];</code> where <code class="highlighter-rouge">sometype</code> is one of the types listed above.</p>
+
+<p>When you <code class="highlighter-rouge">fread</code>, you <em>can</em> actually use <code class="highlighter-rouge">sizeof()</code> on that array, and it <em>will</em> give you the correct size of the array in bytes. At runtime. I know. <em>I kind of lied.</em> ;)</p>
+
+<h3 id="did-i-reverse-it-correctly">Did I reverse it correctly?</h3>
+
+<p>The best way to check is to use your ears. Use the <code class="highlighter-rouge">stereo_</code> and <code class="highlighter-rouge">speech_</code> test files given below. After you run your program, download it in your SFTP client and listen to it.</p>
+
+<hr />
+
+<h2 id="test-files">Test files</h2>
+
+<p>Here are some test WAV files to use, <strong>but your program will be graded with others.</strong> You can copy them to your directory like so:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cp ~jfb42/public/cs449/<span class="k">*</span>.wav <span class="nb">.</span>
+</code></pre></div></div>
+
+<p class="note-important">Don’t forget the space and period in the above command.</p>
+
+<p>If you mess up or corrupt the files somehow, don’t worry, just run this command again to get clean copies of them.</p>
+
+<p>The files should have the following properties by default:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">sine440_16.wav</code>: 16-bit, 44100Hz, mono, 99225 samples, 2.250 seconds</li>
+  <li><code class="highlighter-rouge">sine440_8.wav</code>: 8-bit, 44100Hz, mono, 99225 samples, 2.250 seconds</li>
+  <li><code class="highlighter-rouge">speech_16.wav</code>: 16-bit, 44100Hz, mono, 103936 samples, 2.357 seconds</li>
+  <li><code class="highlighter-rouge">speech_8.wav</code>: 8-bit, 44100Hz, mono, 103936 samples, 2.357 seconds</li>
+  <li><code class="highlighter-rouge">stereo_16.wav</code>: 16-bit, 44100Hz, stereo, 112128 samples, 2.543 seconds</li>
+  <li><code class="highlighter-rouge">stereo_8.wav</code>: 8-bit, 44100Hz, stereo, 112128 samples, 2.543 seconds</li>
+  <li><code class="highlighter-rouge">woosh_16.wav</code>: 16-bit, 44100Hz, stereo, 220500 samples, 5.000 seconds</li>
+  <li><code class="highlighter-rouge">woosh_8.wav</code>: 8-bit, 44100Hz, stereo, 220500 samples, 5.000 seconds</li>
+</ul>
+
+<hr />
+
+<h2 id="grading">Grading</h2>
+
+<p>We will be compiling your programs with the following options, so be sure to compile with them while you develop as well:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gcc <span class="nt">--std</span><span class="o">=</span>c99 <span class="nt">-Wall</span> <span class="nt">-Werror</span> <span class="nt">-o</span> hangman hangman.c
+<span class="nv">$ </span>gcc <span class="nt">--std</span><span class="o">=</span>c99 <span class="nt">-Wall</span> <span class="nt">-Werror</span> <span class="nt">-o</span> wavedit wavedit.c
+</code></pre></div></div>
+
+<ul>
+  <li><strong>[5]</strong> Submitted properly
+    <ul>
+      <li>Follow the instructions….. please………………</li>
+      <li>You’ll lose all 5 points if not submitted correctly.</li>
+    </ul>
+  </li>
+  <li><strong>[30] <code class="highlighter-rouge">hangman.c</code></strong>
+    <ul>
+      <li><strong>[5]</strong> Compiles and runs</li>
+      <li><strong>[5]</strong> Properly reads dictionary</li>
+      <li><strong>[5]</strong> Picks a random word from the dictionary</li>
+      <li><strong>[5]</strong> Implements rules correctly</li>
+      <li><strong>[5]</strong> Proper input and output (PLEASE follow the examples I gave)</li>
+      <li><strong>[5]</strong> Style (TRY to split your code into functions.)</li>
+    </ul>
+  </li>
+  <li><strong>[65] <code class="highlighter-rouge">wavedit.c</code></strong>
+    <ul>
+      <li><strong>[5]</strong> Compiles and runs</li>
+      <li><strong>[5]</strong> Struct matches WAV header structure</li>
+      <li><strong>[5]</strong> Uses command-line arguments to do its work (<code class="highlighter-rouge">argc/argv</code>)</li>
+      <li><strong>[5]</strong> Shows a “usage” message if run without command-line arguments</li>
+      <li><strong>[5]</strong> Checks that file exists (exit if <code class="highlighter-rouge">fopen</code> returns <code class="highlighter-rouge">NULL</code>)</li>
+      <li><strong>[5]</strong> Checks for a valid WAV header</li>
+      <li><strong>[10]</strong> Correctly displays file information in a readable way</li>
+      <li><strong>[10]</strong> Can change the sample rate of WAV files</li>
+      <li><strong>[10]</strong> Can reverse WAV files</li>
+      <li><strong>[5]</strong> Style (again, TRY to split your code into functions.)</li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="submission">Submission</h1>
+
+<p class="good-important">Name your file with <code class="highlighter-rouge">proj1</code>, like <code class="highlighter-rouge">abc123_proj1.tar.gz</code>.</p>
+
+<p><strong>Follow this checklist:</strong></p>
+
+<ul>
+  <li>Did you make sure to put both <code class="highlighter-rouge">.c</code> files in the same <code class="highlighter-rouge">proj1</code> directory?</li>
+  <li>Did you <strong>make a copy</strong> of that directory just in case?</li>
+  <li>Did you name them <code class="highlighter-rouge">hangman.c</code> and <code class="highlighter-rouge">wavedit.c</code>?</li>
+  <li>Did you put your <strong>full name and username</strong> at the top of each file in comments?</li>
+  <li>Do they compile <strong>using the command lines I gave</strong> in the testing section above?</li>
+</ul>
+
+<p class="important"><strong><em>Never turn in a program that doesn’t compile.</em></strong></p>
+
+<p>If you answered yes to all those questions, then you can <a href="../labs/lab1.html#5-archives-and-submission">submit using the same directions as lab1, but replace <code class="highlighter-rouge">lab1</code> with <code class="highlighter-rouge">proj1</code></a>.</p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
